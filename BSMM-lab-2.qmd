@@ -195,25 +195,180 @@ The artist with the tenth-most works in the Tate collection is \_Warhol, Andy\_\
 
 ### Exercise 4
 
-The artist with the greatest number of works in the Tate collection represent \_\_\_% of the total number of works
+```{r}
+greatest_number_of_works <- the_tate %>%
+  group_by(artistId) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  as_tibble()
+greatest_number_of_works <- greatest_number_of_works %>%
+  mutate(
+    percent_of_total = (n / sum(n)) * 100,
+    cumulative_percent = cumsum(percent_of_total)
+  )
+print(greatest_number_of_works)
+```
+
+The artist with the greatest number of works in the Tate collection represent \_56.9\_\_% of the total number of works
 
 ### Exercise 5
 
-There are \_\_ duplicate artist-title pairs
+There are \_23705\_ duplicate artist-title pairs
+
+```{r}
+library(dplyr)
+
+the_tate_tibble <- as_tibble(the_tate)
+
+# Select the columns for artist and title and count the number of rows
+num_rows <- the_tate_tibble %>%
+  select(artist, title) %>%
+  nrow()
+
+# Print the count of rows
+cat("Number of Rows: ", num_rows, "\n")
+
+# Select the columns for artist and title, then count the distinct artist-title pairs
+num_distinct_pairs <- the_tate_tibble %>%
+  select(artist, title) %>%
+  distinct() %>%
+  nrow()
+
+# Print the count of distinct artist-title pairs
+cat("Number of Distinct Artist-Title Pairs: ", num_distinct_pairs, "\n")
+Duplicate_artist_title_pairs <- num_rows-num_distinct_pairs
+
+print(Duplicate_artist_title_pairs)
+
+```
 
 ### Exercise 6
 
-The artist with the largest work in the tate collection is \_\_\_
+The artist with the largest work in the tate collection is \_29021\_\_
 
-The artist with the smallest work in the collection is \_\_\_. The smallest work has area \_\_\_ $\text{cm}^2$
+```{r}
+# Calculate the area in cm^2 and add it as a new column
+the_tate <- the_tate %>%
+  mutate(area_cm2 = height * width * 0.01)
+```
+
+```{r}
+# Select artist, title, and area columns and remove NA values
+selected_data <- the_tate %>%
+  select(artistId, title, area_cm2) %>%
+  drop_na()
+
+# Order the works by area
+ordered_data <- selected_data %>%
+  arrange(area_cm2)
+
+# Find the largest artwork in the collection
+largest_artwork <- ordered_data %>%
+  slice_tail(n = 1)
+
+# Find the smallest artwork in the collection
+smallest_artwork <- ordered_data %>%
+  slice_head(n = 1)
+
+# Print the largest and smallest artworks
+
+print(largest_artwork)
+
+print(smallest_artwork)
+
+
+```
+
+The artist with the smallest work in the collection is \_\_1624()\_. The smallest work has area \_\_2.37\_ $\text{cm}^2$
 
 ### Exercise 7
 
-...
+```{r}
+
+# Left join the tables on the artistId, id column
+the_tate_artists_join <- left_join(the_tate, the_tate_artists, by = c("artistId"="id"))
+
+# Drop rows with NA gender values
+the_tate_artists_join <- the_tate_artists_join %>%
+  filter(!is.na(gender))
+
+# Group by gender
+grouped_data <- the_tate_artists_join %>%
+  group_by(gender)
+
+# Show the resulting table
+grouped_data
+```
 
 ### Exercise 8
 
-The annual return in the SPX price in 2020 was \_\_\_%.
+```{r}
+
+SPX_Data <- read.csv("data/SPX_HistoricalData_1692322132002.csv")
+
+```
+
+```{r}
+
+SPX_Data <- SPX_Data %>%
+  rename(close_last = Close.Last)
+# Create a new column 'previous_close/lost' using lag() for the 'id' column
+SPX_Data <- SPX_Data %>%
+  mutate(previous_CloseLost = lag(Close.Last))
+
+# Print the resulting dataframe
+
+```
+
+```{r}
+SPX_Data
+```
+
+```{r}
+SPX_Data <- SPX_Data %>%
+  mutate(ri = log(Close.Last/previous_CloseLost))
+
+SPX_Data <- SPX_Data %>%
+  mutate(var_ri = ri^2)
+
+```
+
+```{r}
+#SPX_Data_summary <- SPX_Data %>%
+#  mutate(date = mdy(date))
+
+# Extract the year from the 'date' column
+#SPX_Data_summary <- SPX_Data_summary %>%
+#  mutate(year = year(date))
+
+SPX_Data_summary <- SPX_Data %>%
+  mutate(year = substr(date, 7, 10))
+#df$year <- substr(df$date, start_index, end_index)
+
+
+SPX_Data_date <- SPX_Data
+
+```
+
+```{r}
+SPX_Data_date$year <- substr(SPX_Data_date$Date, 7, 10)
+
+```
+
+```{r}
+summary_SPX_Data <- SPX_Data_date %>%
+  group_by(year) %>%
+  summarize(
+    annual_return = mean(ri),
+    annual_std_dev = sd(ri)
+  ) %>%
+  ungroup()
+```
+
+```{}
+```
+
+The annual return in the SPX price in 2020 was --0.05\_\_\_%.
 
 The corresponding price volatility was \_\_\_%.
 
