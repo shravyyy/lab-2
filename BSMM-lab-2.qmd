@@ -1,8 +1,8 @@
 ---
 title: "BSMM-lab-2"
 subtitle: "BSMM 8740 Fall 2023"
-author: "Add your name here"
-date: "Add the date here"
+author: "Shravya Pusa"
+date: "2023-09-28"
 format: html
 editor: visual
 self-contained: true
@@ -18,27 +18,180 @@ the_tate <- readr::read_delim("data/the-tate-collection.csv", ";", escape_double
 the_tate_artists <- readr::read_csv("data/the-tate-artists.csv")
 ```
 
+```{r Install packages}
+install.packages("magrittr")     # the pipe
+install.packages("tidyverse")
+install.packages("tidymodels")
+install.packages("gt")
+install.packages("gtExtras")  
+install.packages("DataExplorer")  
+
+
+```
+
+```{r Load required Packages}
+
+library(magrittr)     # the pipe
+library(tidyverse)    # for data wrangling + visualization
+library(tidymodels)   # for modeling
+library(gt)           # for making display tables
+library(gtExtras)     # helper functions for beautiful tables
+library(DataExplorer) #
+library(dplyr)
+
+
+```
+
 ## Exercises
 
 ### Exercise 1
 
-The `the_tate` dataset has \_\_\_ unique artists who worked from \_\_\_ to \_\_\_. The works were acquired between the years \_\_\_ and \_\_\_.
+```{r}
+num_unique_artists <- the_tate %>%
+  distinct(artistId) 
+
+distinct_count <- the_tate %>%
+  summarize(distinct_count = n_distinct(artistId))
+
+distinct_count
+```
+
+```{r}
+the_tate_cleaned <- the_tate %>%
+  na.omit()
+
+```
+
+```{r}
+the_tate_cleaned
+```
+
+```{r}
+result <- the_tate_cleaned %>%
+  summarize(min_year = min(year),
+            max_year = max(year),
+            min_aquisition_year=min(acquisitionYear),
+            max_aquisition_year=max(acquisitionYear))
+```
+
+```{r}
+the_tate_cleaned$year <- as.numeric(the_tate_cleaned$year)
+
+```
+
+```{r}
+the_tate_cleaned$acquisitionYear <- as.numeric(the_tate_cleaned$acquisitionYear)
+```
+
+```{r}
+# Check for missing values in the "year" column
+any(is.na(the_tate_cleaned$year))
+
+```
+
+```{r}
+result_1 <- the_tate_cleaned %>%
+  summarize(min_year = min(year),
+            max_year = max(year),
+            min_aquisition_year=min(acquisitionYear),
+            max_aquisition_year=max(acquisitionYear))
+```
+
+```{r}
+print(result_1)
+```
+
+The `the_tate` dataset has \_3342\_\_ unique artists who worked from \_1900\_\_ to \_2000\_\_. The works were acquired between the years \_1900\_\_ and \_2009\_\_.
 
 ### Exercise 2
 
-How number of works with missing dates is \_\_.
+How number of works with missing dates is 5397\_\_.
 
-The number of artists whose works have missing dates is \_\_.
+```{r}
+the_tate
 
-It would require resolving missing year data for only \_\_ artists resolve resolve at least 50% of the missing data.
+# Count the number of works with missing dates
+missing_dates_count <- sum(is.na(the_tate$year))
+print(missing_dates_count)
+```
+
+The number of artists whose works have missing dates is \_462\_.
+
+```{r}
+num_artists_with_missing_dates <- the_tate %>%
+  filter(is.na(year)) %>%
+  distinct(artistId) %>%
+  nrow()
+print(num_artists_with_missing_dates)
+```
+
+It would require resolving missing year data for only \_11\_ artists resolve resolve at least 50% of the missing data.
+
+```{r}
+library(dplyr)
+library(tibble)
+
+missing_dates_by_artist <- the_tate %>%
+  filter(is.na(year)) %>%
+  group_by(artistId) %>%
+  tally() %>%
+  arrange(desc(n)) %>%
+  as_tibble()
+
+```
+
+```{r}
+missing_dates_by_artist
+```
+
+```{r}
+missing_dates_by_artist <- missing_dates_by_artist %>%
+  mutate(
+    percent_of_total = (n / sum(n)) * 100,
+    cumulative_percent = cumsum(percent_of_total)
+  )
+
+
+missing_dates_by_artist
+```
+
+```{r}
+required_artists <- 0
+cumulative_percent_threshold <- 50
+
+for (i in 1:nrow(missing_dates_by_artist)) {
+  if (missing_dates_by_artist$cumulative_percent[i] >= cumulative_percent_threshold) {
+    required_artists <- i
+    break
+  }
+}
+
+required_artists
+
+```
 
 The missing year data likely to be classified as \_\_\_\_.
 
 ### Exercise 3
 
-The artist with the most works in the Tate collection is \_\_\_.
+```{r}
+top_10_artists <- the_tate %>%
+  group_by(artistId) %>%
+  summarize(id = n()) %>%
+  arrange(desc(id)) %>%
+  head(10)
 
-The artist with the tenth-most works in the Tate collection is \_\_\_.
+top_10_artists_names <- inner_join(top_10_artists, the_tate_artists, by = c("artistId" = "id"))
+
+```
+
+```{r}
+top_10_artists
+```
+
+The artist with the most works in the Tate collection is \_\_Turner, Joseph\_.
+
+The artist with the tenth-most works in the Tate collection is \_Warhol, Andy\_\_.
 
 ### Exercise 4
 
